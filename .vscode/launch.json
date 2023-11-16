@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/granch/Library/CloudStorage/OneDrive-UniversityofOttawa/CSI3130 Databses II/3130-A1",
+      "program": "/Users/granch/Library/CloudStorage/OneDrive-UniversityofOttawa/CSI3130 Databses II/3130-A1/build/Debug/outDebug"
+    }
+  ]
+}

@@ -52,6 +52,55 @@ ExecHash(HashState *node)
 	// CSI3130 For variables, plan, hash join table get the state of outer node
 	// CSI3130 Initialize the expression context and compute hash value
 	// CSI3130 - Remove error message
+	PlanState  *outerNode;
+	List	   *hashkeys;
+	HashJoinTable hashtable;
+	TupleTableSlot *slot;
+	ExprContext *econtext;
+	uint32		hashvalue;
+
+	/* must provide our own instrumentation support */
+	if (node->ps.instrument)
+		InstrStartNode(node->ps.instrument);
+
+	/*
+	 * get state info from node
+	 */
+	outerNode = outerPlanState(node);
+	hashtable = node->hashtable;
+
+	/*
+	 * set expression context
+	 */
+	hashkeys = node->hashkeys;
+	econtext = node->ps.ps_ExprContext;
+
+	/*
+	 * get all inner tuples and insert into the hash table (or temp files)
+	 */
+	for (;;)
+	{
+		slot = ExecProcNode(outerNode);
+		if (TupIsNull(slot))
+			break;
+		hashtable->totalTuples += 1;
+		/* We have to compute the hash value */
+		econtext->ecxt_innertuple = slot;
+		hashvalue = ExecHashGetHashValue(hashtable, econtext, hashkeys);
+		ExecHashTableInsert(hashtable, ExecFetchSlotTuple(slot), hashvalue);
+	}
+
+	/* must provide our own instrumentation support */
+	if (node->ps.instrument)
+		InstrStopNodeMulti(node->ps.instrument, hashtable->totalTuples);
+
+	/*
+	 * We do not return the hash table directly because it's not a subtype of
+	 * Node, and so would violate the MultiExecProcNode API.  Instead, our
+	 * parent Hashjoin node is expected to know how to fish it out of our node
+	 * state.  Ugly but not really worth cleaning up, since Hashjoin knows
+	 * quite a bit more about Hash besides that.
+	 */
 	return NULL;
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function

@@ -51,7 +51,7 @@ ExecHash(HashState *node)
 	//...
 	// CSI3130 For variables, plan, hash join table get the state of outer node
 	// CSI3130 Initialize the expression context and compute hash value
-	elog(ERROR, "Hash node does not support ExecProcNode call convention");
+	// CSI3130 - Remove error message
 	return NULL;
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function

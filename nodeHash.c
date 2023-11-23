@@ -56,9 +56,10 @@ ExecHash(HashState *node)
 	List	   *hashkeys;
 	HashJoinTable hashtable;
 	TupleTableSlot *slot;
-	ExprContext *econtext;
+	ExprContext *econtext; //CSI3130 initialize expression context
 	uint32		hashvalue;
 
+	//QUESTION: do we remove this?
 	/* must provide our own instrumentation support */
 	if (node->ps.instrument)
 		InstrStartNode(node->ps.instrument);
@@ -66,7 +67,7 @@ ExecHash(HashState *node)
 	/*
 	 * get state info from node
 	 */
-	outerNode = outerPlanState(node);
+	outerNode = outerPlanState(node); 
 	hashtable = node->hashtable;
 
 	/*
@@ -76,32 +77,25 @@ ExecHash(HashState *node)
 	econtext = node->ps.ps_ExprContext;
 
 	/*
-	 * get all inner tuples and insert into the hash table (or temp files)
+	 * get an inner tuple and insert it into the hash table
 	 */
-	for (;;)
-	{
-		slot = ExecProcNode(outerNode);
-		if (TupIsNull(slot))
-			break;
-		hashtable->totalTuples += 1;
-		/* We have to compute the hash value */
-		econtext->ecxt_innertuple = slot;
-		hashvalue = ExecHashGetHashValue(hashtable, econtext, hashkeys);
-		ExecHashTableInsert(hashtable, ExecFetchSlotTuple(slot), hashvalue);
-	}
+	//EDIT: removed the for loop. only one tuple is treated
+	slot = ExecProcNode(outerNode);
+	if (TupIsNull(slot))
+		return NULL;
+	hashtable->totalTuples += 1;
+	/* We have to compute the hash value */
+	econtext->ecxt_innertuple = slot;
+	hashvalue = ExecHashGetHashValue(hashtable, econtext, hashkeys);
+	ExecHashTableInsert(hashtable, ExecFetchSlotTuple(slot), hashvalue);
 
-	/* must provide our own instrumentation support */
-	if (node->ps.instrument)
-		InstrStopNodeMulti(node->ps.instrument, hashtable->totalTuples);
+	//EDIT: removed InstrStopNodeMulti (see MultiExecHash)
 
 	/*
-	 * We do not return the hash table directly because it's not a subtype of
-	 * Node, and so would violate the MultiExecProcNode API.  Instead, our
-	 * parent Hashjoin node is expected to know how to fish it out of our node
-	 * state.  Ugly but not really worth cleaning up, since Hashjoin knows
-	 * quite a bit more about Hash besides that.
+	 * return tuple that was hashed
 	 */
-	return NULL;
+	//EDIT: return the tuple that was added to the hash table
+	return slot //QUESTION: not sure if this is supposed to be a pointer or a value
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function
 

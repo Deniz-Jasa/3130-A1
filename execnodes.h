@@ -771,7 +771,7 @@ typedef struct PlanState
 	 * Other run-time state needed by most if not all node types.
 	 */
 	TupleTableSlot *ps_OuterTupleSlot;	/* slot for current "outer" tuple */
-										/* CSI3530 / CSI3130 -slot for current "INNER" tuple */
+	TupleTableSlot *ps_InnerTupleSlot;	/* EDIT -slot for current "INNER" tuple */
 	TupleTableSlot *ps_ResultTupleSlot; /* slot for my result tuples */
 	ExprContext *ps_ExprContext;	/* node's expression-evaluation context */
 	ProjectionInfo *ps_ProjInfo;	/* info for doing tuple projection */
@@ -1116,20 +1116,36 @@ typedef struct HashJoinState
 {
 	JoinState	js;				/* its first field is NodeTag */
 	List	   *hashclauses;	/* list of ExprState nodes */
-	HashJoinTable hj_HashTable;
-	uint32		hj_CurHashValue;
-	int			hj_CurBucketNo;
-	HashJoinTuple hj_CurTuple;
+	HashJoinTable hj_InnerHashTable; // EDIT: Inner Hash table
+	HashJoinTable hj_OuterHashTable; // EDIT: Outer Hash table
+	uint32		hj_OuterCurHashValue; //EDIT: Outer hash value for current tuple
+	uint32		hj_InnerCurHashValue; //EDIT: Inner hash value for current tuple
+	int			hj_OuterCurBucketNo; //EDIT: Outer current bucket number
+	int			hj_InnerCurBucketNo; //EDIT: Inner current bucket number
+	HashJoinTuple hj_OuterCurTuple; //EDIT: Outer current tuple
+	HashJoinTuple hj_InnerCurTuple; //EDIT: Inner current tuple
 	List	   *hj_OuterHashKeys;		/* list of ExprState nodes */
 	List	   *hj_InnerHashKeys;		/* list of ExprState nodes */
 	List	   *hj_HashOperators;		/* list of operator OIDs */
-	TupleTableSlot *hj_OuterTupleSlot;
-	TupleTableSlot *hj_HashTupleSlot;
+	TupleTableSlot *hj_OuterTupleSlot;  //EDIT: Slot for outer tuple 
+	TupleTableSlot *hj_InnerTupleSlot; 
+	TupleTableSlot *hj_InnerHashTupleSlot; //EDIT: Slot for inner tuple's hashed value 
+	TupleTableSlot *hj_OuterHashTupleSlot; //EDIT: Slot for outer tuple's hashed value 
 	TupleTableSlot *hj_NullInnerTupleSlot;
 	TupleTableSlot *hj_FirstOuterTupleSlot;
+	TupleTableSlot *hj_FirstInnerTupleSlot; //EDIT: First tuple retreived from inner plane
+	int			hj_OuterProbNo; //EDIT: Outer current Probing indice
+	int			hj_InnerProbNo; //EDIT: Inner current Probing indice
 	bool		hj_NeedNewOuter;
+	bool		hj_NeedNewInner; //EDIT: true if need new inner tuple on next call
 	bool		hj_MatchedOuter;
 	bool		hj_OuterNotEmpty;
+	bool		hj_InnerNotEmpty; //EDIT: true if Inner relation known not empty
+	bool		hj_OuterExhausted; //EDIT: true if outer relation is completly hashed
+	bool		hj_InnerExhausted; //EDIT: true if Inner relation is completly hashed
+	bool       hj_FetchInnerNext; //EDIT: true if we are to fetch the inner relation next/false if we are to fetch the outer relation
+
+	
 } HashJoinState;
 
 

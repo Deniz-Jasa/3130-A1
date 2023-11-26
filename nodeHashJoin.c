@@ -48,16 +48,19 @@ ExecHashJoin(HashJoinState *node)
 	EState	   *estate;
 	PlanState  *outerNode;
 	// CSI3530 il faut un innerNode aussi //CSI3130 You need an inner node too
-	HashState  *hashNode;
+	HashState  *InnerHashNode; //EDIT: Inner hash node state
+	HashState  *OuterHashNode; //EDIT: Outer hash node state
 	List	   *joinqual;
 	List	   *otherqual;
 	TupleTableSlot *inntuple;
+	TupleTableSlot *outtuple; //EDIT: Outer Hashtable node 
 	// CSI3530 il faut un outer_hashtable aussi //CSI 3130 You need an outer_hashtable node too
 	ExprContext *econtext;
 	ExprDoneCond isDone;
-	HashJoinTable hashtable;
+	HashJoinTable OuterHashtable;
 	HeapTuple	curtuple;
 	TupleTableSlot *outerTupleSlot;
+	TupleTableSlot *innerTupleSlot; //EDIT: Inner hash table slot 
     // CSI3530 il faut un innerTupleSlot aussi //CSI3130 You need an innerTupleSlot too
 	uint32		hashvalue;
 	int			batchno;
@@ -68,14 +71,16 @@ ExecHashJoin(HashJoinState *node)
 	estate = node->js.ps.state;
 	joinqual = node->js.joinqual;
 	otherqual = node->js.ps.qual;
-	hashNode = (HashState *) innerPlanState(node);
-	outerNode = outerPlanState(node);
+	hashNode = (HashState *) innerPlanState(node); 
+	hashNode = (HashState *) outerPlanState(node); //EDIT: Need an outer plan node as well
+	//outerNode = outerPlanState(node); //EDIT: no longer needed (Have a hash join outer node instead) 
 	// CSI3530 and CSI3130 ...
 
 	/*
 	 * get information from HashJoin state
 	 */
-	hashtable = node->hj_HashTable;
+	innerHashtable = node->hj_HashTable; //EDIT: Needed an inner hash table
+	outerHashTable = node->hj_HashTable; //EDIT: Needed an outer hash table
     // CSI3530 and CSI3130 ...
 	econtext = node->js.ps.ps_ExprContext;
 
@@ -113,7 +118,7 @@ ExecHashJoin(HashJoinState *node)
 	/*
 	 * if this is the first call, build the hash table for inner relation
 	 */
-	if (hashtable == NULL) //CSI3530 and CSI3130 ..
+	if (hashtable == NULL) //CSI3530 and CSI3130 .. **NOTE: Should implement this for inner and outer (build both if empty)
 	{
 		/*
 		 * If the outer relation is completely empty, we can quit without

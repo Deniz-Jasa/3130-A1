@@ -95,7 +95,7 @@ ExecHash(HashState *node)
 	 * return tuple that was hashed
 	 */
 	//EDIT: return the tuple that was added to the hash table
-	return slot //QUESTION: not sure if this is supposed to be a pointer or a value
+	return slot 
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function
 

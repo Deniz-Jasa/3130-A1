@@ -46,10 +46,10 @@ TupleTableSlot *				/* return: a tuple or NULL */
 ExecHashJoin(HashJoinState *node)
 {
 	EState	   *estate;
-	PlanState  *outerNode;
+	PlanState  *outerNode; //EDIT: no longer need?
 	// CSI3530 il faut un innerNode aussi //CSI3130 You need an inner node too
-	HashState  *InnerHashNode; //EDIT: Inner hash node state
-	HashState  *OuterHashNode; //EDIT: Outer hash node state
+	HashState  *innerHashNode; //EDIT: Inner hash node state
+	HashState  *outerHashNode; //EDIT: Outer hash node state
 	List	   *joinqual;
 	List	   *otherqual;
 	TupleTableSlot *inntuple;
@@ -71,16 +71,16 @@ ExecHashJoin(HashJoinState *node)
 	estate = node->js.ps.state;
 	joinqual = node->js.joinqual;
 	otherqual = node->js.ps.qual;
-	hashNode = (HashState *) innerPlanState(node); 
-	hashNode = (HashState *) outerPlanState(node); //EDIT: Need an outer plan node as well
+	innerHashNode = (HashState *) innerPlanState(node); 
+	outerHashNode = (HashState *) outerPlanState(node); //EDIT: Need an outer plan node as well
 	//outerNode = outerPlanState(node); //EDIT: no longer needed (Have a hash join outer node instead) 
 	// CSI3530 and CSI3130 ...
 
 	/*
 	 * get information from HashJoin state
 	 */
-	innerHashtable = node->hj_HashTable; //EDIT: Needed an inner hash table
-	outerHashTable = node->hj_HashTable; //EDIT: Needed an outer hash table
+	innerHashtable = node->hj_InnerHashTable; //EDIT: Needed to get inner hash table
+	outerHashTable = node->hj_OuterHashTable; //EDIT: Needed to get outer hash table
     // CSI3530 and CSI3130 ...
 	econtext = node->js.ps.ps_ExprContext;
 

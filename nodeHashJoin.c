@@ -348,8 +348,8 @@ HashJoinState *
 ExecInitHashJoin(HashJoin *node, EState *estate)
 {
 	HashJoinState *hjstate;
-	Plan	   *outerNode;
-	Hash	   *hashNode;
+	Hash	   *innerHashNode; //EDIT: need inner & outer hash node
+	Hash	   *outerHashNode; //EDIT: need inner & outer hash node
 	List	   *lclauses;
 	List	   *rclauses;
 	List	   *hoperators;
@@ -389,13 +389,13 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 	/*
 	 * initialize child nodes
 	 */
-	outerNode = outerPlan(node);
+	outerHashNode = (Hash *) outerPlan(node); //EDIT: get outer Hash plan node
 	// CSI3530 and CSI3130 ...
-	hashNode = (Hash *) innerPlan(node);
+	innerHashNode = (Hash *) innerPlan(node); //EDIT: specify inner hashNode
 
-	outerPlanState(hjstate) = ExecInitNode(outerNode, estate);
+	outerPlanState(hjstate) = ExecInitNode((Plan *) outerHashNode, estate); //EDIT: get plan state of outer hash node
 	// CSI3530 and CSI3130 ...
-	innerPlanState(hjstate) = ExecInitNode((Plan *) hashNode, estate);
+	innerPlanState(hjstate) = ExecInitNode((Plan *) innerHashNode, estate); //EDIT: specify inner hashNode
 
 #define HASHJOIN_NSLOTS 3
 
@@ -405,6 +405,7 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 	// CSI3530 and CSI3130 ... 
 	ExecInitResultTupleSlot(estate, &hjstate->js.ps);
 	hjstate->hj_OuterTupleSlot = ExecInitExtraTupleSlot(estate);
+	hjstate->hj_InnerTupleSlot = ExecInitExtraTupleSlot(estate); //EDIT: set inner tuple slot
 
 	switch (node->join.jointype)
 	{
@@ -429,33 +430,47 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 	 * the hash table.	-cim 6/9/91
 	 */
 	{
-		HashState  *hashstate = (HashState *) innerPlanState(hjstate);
-		TupleTableSlot *slot = hashstate->ps.ps_ResultTupleSlot;
+		HashState  *innerHashstate = (HashState *) innerPlanState(hjstate);
+		TupleTableSlot *outerSlot = innerHashstate->ps.ps_ResultTupleSlot;
 
-		hjstate->hj_HashTupleSlot = slot;
+		hjstate->hj_OuterHashTupleSlot = outerSlot;
+
+		//EDIT: repeat for inner hash tuple slot?
+		HashState  *outerHashstate = (HashState *) outerPlanState(hjstate);
+		TupleTableSlot *innerSlot = outerHashstate->ps.ps_ResultTupleSlot;
+
+		hjstate->hj_innerHashTupleSlot = innerSlot;
 	}
 
 	/*
 	 * initialize tuple type and projection info
 	 */
 	ExecAssignResultTypeFromTL(&hjstate->js.ps);
-	ExecAssignProjectionInfo(&hjstate->js.ps); //CSI3530 and CSI3130
+	ExecAssignProjectionInfo(&hjstate->js.ps); //CSI3530 and CSI3130 ??
 
 	ExecSetSlotDescriptor(hjstate->hj_OuterTupleSlot,
 						  ExecGetResultType(outerPlanState(hjstate)),
-						  false); //CSI3530 and CSI3130
+						  false); //CSI3530 and CSI3130 
+	ExecSetSlotDescriptor(hjstate->hj_InnerTupleSlot,
+						  ExecGetResultType(innerPlanState(hjstate)),
+						  false); //EDIT: slot descriptor for inner tuple slot
 
 	/*
 	 * initialize hash-specific info
 	 */
-	hjstate->hj_HashTable = NULL;
+	hjstate->hj_OuterHashTable = NULL;
+	hjstate->hj_InnerHashTable = NULL; //EDIT: initialize inner hash table
 	//CSI3530 and CSI3130...
 	hjstate->hj_FirstOuterTupleSlot = NULL;
+	hjstate->hj_FirstInnerTupleSlot = NULL; //EDIT: initislize firs inner tuple stlop
 
 	//CSI3530 Plein d'initialisations a faire ici // CSI3130 Initialize here
-	hjstate->hj_CurHashValue = 0;
-	hjstate->hj_CurBucketNo = 0;
-	hjstate->hj_CurTuple = NULL;
+	hjstate->hj_OuterCurHashValue = 0;
+	hjstate->hj_InnerCurHashValue = 0; //EDIT: initilize inner cur hash value
+	hjstate->hj_OuterCurBucketNo = 0;
+	hjstate->hj_InnerCurBucketNo = 0; //EDIT: initilize inner cur bucket number
+	hjstate->hj_OuterCurTuple = NULL;
+	hjstate->hj_InnerCurTuple = NULL; //EDIT: initilize cur inner tuple
 
 
 	/*
@@ -484,12 +499,17 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 	hjstate->hj_HashOperators = hoperators;
 	/* child Hash node needs to evaluate inner hash keys, too */
 	((HashState *) innerPlanState(hjstate))->hashkeys = rclauses;
+	((HashState *) outerPlanState(hjstate))->hashkeys = lclauses; //EDIT: give clauses to outer hash node
 
 	hjstate->js.ps.ps_OuterTupleSlot = NULL;
+	hjstate->js.ps.ps_InnerTupleSlot = NULL; // EDIT: initialize innerTupleSlot
 	hjstate->js.ps.ps_TupFromTlist = false;
 	hjstate->hj_NeedNewOuter = true;
+	hjstate->hj_NeedNewInner = true; // EDIT: initilize need new inner 
 	hjstate->hj_MatchedOuter = false;
+	hjstate->hj_MatchedInner = false; // EDIT: initialize match inner
 	hjstate->hj_OuterNotEmpty = false;
+	hjstate->hj_InnerNotEmpty = false; //EDIT: initialize inner not emplty to false
 
 	return hjstate;
 }

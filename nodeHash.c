@@ -878,7 +878,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 			}
 		}
 
-		hashTuple = hashTuple->next; //no match found, try next tuple in the bucket
+		hashTuple = hashTuple->next; //tuples werent a match, try next tuple in the bucket
 	}
 
 	/*

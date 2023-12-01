@@ -801,49 +801,84 @@ ExecHashGetBucketAndBatch(HashJoinTable hashtable,
  *
  * The current outer tuple must be stored in econtext->ecxt_outertuple.
  */
-HashTuple
+HashJoinTuple //EDIT: changed return type
 ExecScanHashBucket(HashJoinState *hjstate,
 				   ExprContext *econtext)
 {
+	//EDIT: decalred missing variables and removed initialization
 	List	   *hjclauses = hjstate->hashclauses;
-	HashJoinTable hashtable = hjstate->hj_HashTable;
-	HashJoinTuple hashTuple = hjstate->hj_CurTuple;
-	uint32		hashvalue = hjstate->hj_CurHashValue;
+	HashJoinTable hashtable; //hash table of relation being probed
+	HashJoinTuple hashTuple; //last tuple from relation being probed that was matched to the probing relation
+	uint32		hashvalue; //current hash value for tuple doing the probing
+	int 		bucketNo; //bucket number of ? EDIT: added
+	TupleTableSlot *hashTupleSlot; //tuple slot for hashed tuples EDIT: added
+	TupleTableSlot *econtext_tuple; //tuple slot in the econtext for the hash tuple EDIT: added, still not 100% sure if this is needed
+	HashJoinTuple *hjCurTuple; //pointer to hash join cur tuple to update it
+
+
+	//EDIT: initialize values based on the relation we are probing 
+	if (hjstate->hj_probingInner) {
+		hashtable = hjstate-> hj_InnerHashTable; //inner relations hash table
+		hashTuple = hjstate->hj_InnerCurTuple; //last inner tuple matched to current outer
+		hashvalue = hjstate->hj_OuterCurHashValue; //hash value for current outer tuple
+		bucketNo = hjstate->hj_OuterCurBucketNo; //bucket number of for current outer tuple
+		hashTupleSlot = hjstate->hj_InnerTupleSlot;
+		econtext_tuple = econtext->ecxt_innertuple;
+		hjCurTuple = *hjstate->hj_InnerCurTuple;
+		
+	}
+	else {
+		hashtable = hjstate-> hj_OuterHashTable;
+		hashTuple = hjstate->hj_OuterCurTuple; 
+		hashvalue = hjstate->hj_InnerCurHashValue; 
+		bucketNo = hjstate->hj_InnerCurBucketNo; 
+		hashTupleSlot = hjstate->hj_OuterTupleSlot;
+		econtext_tuple = econtext->ecxt_outertuple;
+		hjCurTuple = *hjstate->hj_OuterCurTuple;
+	}
+
 
 	/*
 	 * hj_CurTuple is NULL to start scanning a new bucket, or the address of
 	 * the last tuple returned from the current bucket.
+	 * 
+	 * rel1 - probing relation (normally outer)
+	 * rel2 - probed relation (normally inner)
 	 */
 	if (hashTuple == NULL)
-		hashTuple = hashtable->buckets[hjstate->hj_CurBucketNo];
+		hashTuple = hashtable->buckets[bucketNo]; //get first rel2 tuple from new bucket
 	else
-		hashTuple = hashTuple->next;
+		//hashTuple is previously matched tuple from rel2
+		//call next to get next one in the bucket
+		hashTuple = hashTuple->next; 
 
-	while (hashTuple != NULL)
+	while (hashTuple != NULL) //if hashTuple == null, the end of the bucket has been reached
 	{
-		if (hashTuple->hashvalue == hashvalue)
+		if (hashTuple->hashvalue == hashvalue) //if rel2's current hashTuple hash value = probing tuples hash value
 		{
-			HeapTuple	heapTuple = &hashTuple->htup;
-			TupleTableSlot *inntuple;
+			
+			HeapTuple	heapTuple = &hashTuple->htup; //get heap tuple form of rel2's hashTuple
+			TupleTableSlot *etuple; //EDIT: renamed to avoid confusion (renamed from inntuple)
 
 			/* insert hashtable's tuple into exec slot so ExecQual sees it */
+			//EDIT: subbed in hasTupleSlot variable
 			inntuple = ExecStoreTuple(heapTuple,
-									  hjstate->hj_HashTupleSlot,
+									  hashTupleSlot, 
 									  InvalidBuffer,
 									  false);	/* do not pfree */
-			econtext->ecxt_innertuple = inntuple;
+			econtext_tuple = etuple; //EDIT : subbed in variable instead of direct reference to hjstate parameter
 
 			/* reset temp memory each time to avoid leaks from qual expr */
 			ResetExprContext(econtext);
 
-			if (ExecQual(hjclauses, econtext, false))
+			if (ExecQual(hjclauses, econtext, false)) // if qualification returns true, tuples have been matched
 			{
-				hjstate->hj_CurTuple = hashTuple;
-				return heapTuple;
+				*hjCurTuple = hashTuple; //EDIT: update CurTuple of rel2 in hjsate, not sure if i did the pointer right?
+				return hashTuple; //EDIT: return Hash
 			}
 		}
 
-		hashTuple = hashTuple->next;
+		hashTuple = hashTuple->next; //no match found, try next tuple in the bucket
 	}
 
 	/*

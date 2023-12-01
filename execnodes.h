@@ -1144,7 +1144,7 @@ typedef struct HashJoinState
 	bool		hj_OuterExhausted; //EDIT: true if outer relation is completly hashed
 	bool		hj_InnerExhausted; //EDIT: true if Inner relation is completly hashed
 	bool       hj_FetchInnerNext; //EDIT: true if we are to fetch the inner relation next/false if we are to fetch the outer relation
-
+	bool		hj_probingInner; //EDIT: true if we are probing the inner hash table with an outer tupple (used in ExecScanHashBucket)
 	
 } HashJoinState;
 

@@ -1116,7 +1116,7 @@ typedef struct HashJoinState
 {
 	JoinState	js;				/* its first field is NodeTag */
 	List	   *hashclauses;	/* list of ExprState nodes */
-	HashJoinTable hj_InnerHashTable; // x: Inner Hash table
+	HashJoinTable hj_InnerHashTable; // EDIT: Inner Hash table
 	HashJoinTable hj_OuterHashTable; // EDIT: Outer Hash table
 	uint32		hj_OuterCurHashValue; //EDIT: Outer hash value for current tuple
 	uint32		hj_InnerCurHashValue; //EDIT: Inner hash value for current tuple
@@ -1134,16 +1134,16 @@ typedef struct HashJoinState
 	TupleTableSlot *hj_NullInnerTupleSlot;
 	TupleTableSlot *hj_FirstOuterTupleSlot;
 	TupleTableSlot *hj_FirstInnerTupleSlot; //EDIT: First tuple retreived from inner plane
-	int			hj_OuterProbNo; //EDIT: Outer current Probing indice
-	int			hj_InnerProbNo; //EDIT: Inner current Probing indice
-	bool		hj_NeedNewOuter;
+	int			hj_OuterProbN; //EDIT: Outer current Probing indice
+	int			hj_matchesProbingInner; //EDIT: Number of matches found while probing inner
+	bool		hj_matchesProbingOuter; //EDIT: Number of matches found while probing outer
 	bool		hj_NeedNewInner; //EDIT: true if need new inner tuple on next call
 	bool		hj_MatchedOuter;
 	bool		hj_OuterNotEmpty;
 	bool		hj_InnerNotEmpty; //EDIT: true if Inner relation known not empty
 	bool		hj_OuterExhausted; //EDIT: true if outer relation is completly hashed
 	bool		hj_InnerExhausted; //EDIT: true if Inner relation is completly hashed
-	bool       hj_FetchInnerNext; //EDIT: true if we are to fetch the inner relation next/false if we are to fetch the outer relation
+	// DONT THINK WE NEED THIS ??bool       hj_FetchInnerNext; //EDIT: true if we are to fetch the inner relation next/false if we are to fetch the outer relation
 	bool		hj_probingInner; //EDIT: true if we are probing the inner hash table with an outer tupple (used in ExecScanHashBucket)
 	
 } HashJoinState;

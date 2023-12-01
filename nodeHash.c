@@ -79,7 +79,7 @@ ExecHash(HashState *node)
 	/*
 	 * get an inner tuple and insert it into the hash table
 	 */
-	//EDIT: removed the for loop. only one tuple is treated
+	//EDIT: removed the for loop. only one tuple is treated ??
 	slot = ExecProcNode(outerNode);
 	if (TupIsNull(slot))
 		return NULL;
@@ -94,7 +94,7 @@ ExecHash(HashState *node)
 	/*
 	 * return tuple that was hashed
 	 */
-	//EDIT: return the tuple that was added to the hash table
+	//EDIT: return the tuple that was added to the hash table?? SHouldnt this be null??
 	return slot 
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function
@@ -844,8 +844,9 @@ ExecScanHashBucket(HashJoinState *hjstate,
 	 * 
 	 * rel1 - probing relation (normally outer)
 	 * rel2 - probed relation (normally inner)
+
 	 */
-	if (hashTuple == NULL)
+	if (hashTuple == NULL) //? Should this be within each if stmt??
 		hashTuple = hashtable->buckets[bucketNo]; //get first rel2 tuple from new bucket
 	else
 		//hashTuple is previously matched tuple from rel2

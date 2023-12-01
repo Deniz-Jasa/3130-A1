@@ -1116,7 +1116,7 @@ typedef struct HashJoinState
 {
 	JoinState	js;				/* its first field is NodeTag */
 	List	   *hashclauses;	/* list of ExprState nodes */
-	HashJoinTable hj_InnerHashTable; // EDIT: Inner Hash table
+	HashJoinTable hj_InnerHashTable; // x: Inner Hash table
 	HashJoinTable hj_OuterHashTable; // EDIT: Outer Hash table
 	uint32		hj_OuterCurHashValue; //EDIT: Outer hash value for current tuple
 	uint32		hj_InnerCurHashValue; //EDIT: Inner hash value for current tuple

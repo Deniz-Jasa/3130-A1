@@ -214,11 +214,13 @@ ExecHashJoin(HashJoinState *node)
 	for (;;)
 	{
 		/*
+		 * EDIT:
+		 *
 		 * If we don't have an outer tuple, get the next one
 		 */
 		if (node->hj_NeedNewOuter)
 		{
-			outerTupleSlot = ExecHashJoinOuterGetTuple(outerNode, node, &hashvalue);
+			outerTupleSlot = ExecHashJoinGetTuple(outerHashNode, node, &hashvalue);
 			
 			if (TupIsNull(outerTupleSlot))
 			{
@@ -256,6 +258,49 @@ ExecHashJoin(HashJoinState *node)
 									  &hashtable->outerBatchFile[batchno]);
 				node->hj_NeedNewOuter = true;
 				continue;		/* loop around for a new outer tuple */
+			}
+		}
+		
+		if (node->hj_NeedNewInner)
+		{
+			innerTupleSlot = ExecHashJoinGetTuple(innerHashNode, node, &hashvalue);
+			
+			if (TupIsNull(innerTupleSlot))
+			{
+				/* end of join */
+				return NULL;
+			}
+
+			node->js.ps.ps_innerTupleSlot = innerTupleSlot;
+			econtext->ecxt_innerTupleSlot = innerTupleSlot;
+			node->hj_NeedNewInner = false;
+			node->hj_MatchedInner = false;
+
+			/*
+			 * now we have an inner tuple, find the corresponding bucket for
+			 * this tuple from the hash table
+			 */
+			node->hj_CurHashValue = hashvalue;
+			ExecHashGetBucketAndBatch(hashtable, hashvalue,
+									  &node->hj_CurBucketNo, &batchno);
+			node->hj_CurTuple = NULL;
+
+			/*
+			 * Now we've got an inner tuple and the corresponding hash bucket,
+			 * but this tuple may not belong to the current batch.
+			 */
+			if (batchno != hashtable->curbatch)
+			{
+				/*
+				 * Need to postpone this inner tuple to a later batch. Save it
+				 * in the corresponding inner-batch file.
+				 */
+				Assert(batchno > hashtable->curbatch);
+				ExecHashJoinSaveTuple(ExecFetchSlotTuple(innerTupleSlot),
+									  hashvalue,
+									  &hashtable->innerBatchFile[batchno]);
+				node->hj_NeedNewInner = true;
+				continue;		/* loop around for a new inner tuple */
 			}
 		}
 
@@ -323,7 +368,7 @@ ExecHashJoin(HashJoinState *node)
 			for (;;)
 		{
 			ExprContext* econtext = node->js.ps.ps_ExprContext;
-			econtext->ecxt_innertuple = node->js.ps.ps_OuterTupleSlot; //Getting outer tuple info from ps
+			econtext->ecxt_innertuple = node->js.ps.ps_OuterTupleSlot; //Getting outer tuple info from ps // Q: Should this not be called econtext->ecxt_outertuple for better readability
 			node->hj_probingInner = true;
 			curtuple = ExecScanHashBucket(node, econtext); //Should this be Scan Inner relation? 
 			if (curtuple == NULL)
@@ -733,6 +778,130 @@ ExecHashJoinOuterGetTuple(PlanState *outerNode,
 	/* Out of batches... */
 	return NULL;
 }
+
+
+/*
+ * EDIT: Dynamic tuple fetcher
+ *
+ *		get the next outer tuple for hashjoin: either by
+ *		executing a plan node in the first pass, or from
+ *		the temp files for the hashjoin batches.
+ *
+ * Returns a null slot if no more outer tuples.  On success, the tuple's
+ * hash value is stored at *hashvalue --- this is either originally computed,
+ * or re-read from the temp file.
+ */
+
+static TupleTableSlot *
+ExecHashJoinGetTuple(PlanState *node, HashJoinState *hjstate, uint32 *hashvalue, bool isOuter)
+{
+    HashJoinTable hashtable = isOuter ? hjstate->hj_OuterHashTable : hjstate->hj_InnerHashTable;
+    TupleTableSlot *firstTupleSlot = isOuter ? hjstate->hj_FirstOuterTupleSlot : hjstate->hj_FirstInnerTupleSlot;
+    TupleTableSlot *tupleSlot = isOuter ? hjstate->hj_OuterTupleSlot : hjstate->hj_InnerTupleSlot;
+    List *hashKeys = isOuter ? hjstate->hj_OuterHashKeys : hjstate->hj_InnerHashKeys;
+    int curbatch = hashtable->curbatch;
+    TupleTableSlot *slot;
+
+    if (curbatch == 0) {
+        // Check to see if the first tuple was already fetched and not used yet.
+        slot = firstTupleSlot;
+        if (!TupIsNull(slot))
+            firstTupleSlot = NULL;
+        else
+            slot = ExecProcNode(node);
+
+        if (!TupIsNull(slot)) {
+            // Compute the tuple's hash value.
+            ExprContext *econtext = hjstate->js.ps.ps_ExprContext;
+            if (isOuter)
+                econtext->ecxt_outertuple = slot;
+            else
+                econtext->ecxt_innertuple = slot;
+
+            *hashvalue = ExecHashGetHashValue(hashtable, econtext, hashKeys);
+
+            // Remember the relation is not empty for possible rescan.
+            if (isOuter)
+                hjstate->hj_OuterNotEmpty = true;
+            else
+                hjstate->hj_InnerNotEmpty = true;
+
+            return slot;
+        }
+
+        // End of the first pass, try to switch to a saved batch.
+        curbatch = ExecHashJoinNewBatch(hjstate);
+    }
+
+    // Try to read from a temp file for subsequent batches.
+    while (curbatch < hashtable->nbatch) {
+        BufFile **batchFile = isOuter ? &hashtable->outerBatchFile[curbatch] : &hashtable->innerBatchFile[curbatch];
+        slot = ExecHashJoinGetSavedTuple(hjstate, *batchFile, hashvalue, tupleSlot);
+        if (!TupIsNull(slot))
+            return slot;
+
+        curbatch = ExecHashJoinNewBatch(hjstate);
+    }
+
+    // Out of batches...
+    return NULL;
+}
+
+/*
+ * EDIT: ExecHashJoinInnerGetTuple
+ *
+ *		get the next outer tuple for hashjoin: either by
+ *		executing a plan node in the first pass, or from
+ *		the temp files for the hashjoin batches.
+ *
+ * Returns a null slot if no more outer tuples.  On success, the tuple's
+ * hash value is stored at *hashvalue --- this is either originally computed,
+ * or re-read from the temp file.
+ */
+static TupleTableSlot *
+ExecHashJoinInnerGetTuple(PlanState *innerNode, HashJoinState *hjstate, uint32 *hashvalue)
+{
+    HashJoinTable hashtable = hjstate->hj_InnerHashTable;
+    int curbatch = hashtable->curbatch;
+    TupleTableSlot *slot;
+
+    if (curbatch == 0) {
+        // Check to see if the first inner tuple was already fetched by ExecHashJoin() and not used yet.
+        slot = hjstate->hj_FirstInnerTupleSlot;
+        if (!TupIsNull(slot))
+            hjstate->hj_FirstInnerTupleSlot = NULL;
+        else
+            slot = ExecProcNode(innerNode);
+
+        if (!TupIsNull(slot)) {
+            // Compute the tuple's hash value.
+            ExprContext *econtext = hjstate->js.ps.ps_ExprContext;
+            econtext->ecxt_innertuple = slot;
+            *hashvalue = ExecHashGetHashValue(hashtable, econtext, hjstate->hj_InnerHashKeys);
+
+            // Remember inner relation is not empty for possible rescan.
+            hjstate->hj_InnerNotEmpty = true;
+
+            return slot;
+        }
+
+        // End of the first pass, try to switch to a saved batch.
+        curbatch = ExecHashJoinNewBatch(hjstate);
+    }
+
+    // Try to read from a temp file for subsequent batches.
+    while (curbatch < hashtable->nbatch) {
+        slot = ExecHashJoinGetSavedTuple(hjstate, hashtable->innerBatchFile[curbatch], hashvalue, hjstate->hj_InnerTupleSlot);
+        if (!TupIsNull(slot))
+            return slot;
+
+        curbatch = ExecHashJoinNewBatch(hjstate);
+    }
+
+    // Out of batches...
+    return NULL;
+}
+
 
 /*
  * ExecHashJoinNewBatch

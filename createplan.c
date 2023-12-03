@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
- *
- * createplan.c
+ * 
+ * EDITED createplan.c
  *	  Routines to create the desired plan for processing a query.
  *	  Planning is complete, we just need to convert the selected
  *	  Path into a Plan.

@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
  *
- * nodeHash.c
+ * EDITED nodeHash.c
  *	  Routines to hash relations for hashjoin
  *
  * Portions Copyright (c) 1996-2005, PostgreSQL Global Development Group

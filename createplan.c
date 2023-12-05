@@ -1496,7 +1496,7 @@ create_hashjoin_plan(PlannerInfo *root,
 	// CSI3530 Il faut construire le hash node et le hash join node pour les deux hash plans (outer et inner)
 	// CSI3130 You must build the hash node and hash join node for both hash plans (outer and inner)
 	hash_plan_inner = make_hash(inner_plan);
-	hash_plan_outer = make_hash(outer_plan)
+	hash_plan_outer = make_hash(outer_plan);
 	join_plan = make_hashjoin(tlist,
 							  joinclauses,
 							  otherclauses,

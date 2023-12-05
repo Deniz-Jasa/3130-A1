@@ -771,7 +771,7 @@ typedef struct PlanState
 	 * Other run-time state needed by most if not all node types.
 	 */
 	TupleTableSlot *ps_OuterTupleSlot;	/* slot for current "outer" tuple */
-	TupleTableSlot *ps_InnerTupleSlot;	/* EDIT -slot for current "INNER" tuple */
+	TupleTableSlot *ps_innerTupleSlot;	/* EDIT -slot for current "INNER" tuple */
 	TupleTableSlot *ps_ResultTupleSlot; /* slot for my result tuples */
 	ExprContext *ps_ExprContext;	/* node's expression-evaluation context */
 	ProjectionInfo *ps_ProjInfo;	/* info for doing tuple projection */
@@ -1138,7 +1138,9 @@ typedef struct HashJoinState
 	int			hj_matchesProbingInner; //EDIT: Number of matches found while probing inner
 	bool		hj_matchesProbingOuter; //EDIT: Number of matches found while probing outer
 	bool		hj_NeedNewInner; //EDIT: true if need new inner tuple on next call
+	bool		hj_NeedNewOuter; //EDIT: true if need new inner tuple on next call
 	bool		hj_MatchedOuter;
+	bool		hj_MatchedInner;
 	bool		hj_OuterNotEmpty;
 	bool		hj_InnerNotEmpty; //EDIT: true if Inner relation known not empty
 	bool		hj_OuterExhausted; //EDIT: true if outer relation is completly hashed

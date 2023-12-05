@@ -95,7 +95,7 @@ ExecHash(HashState *node)
 	 * return tuple that was hashed
 	 */
 	//EDIT: return the tuple that was added to the hash table?? SHouldnt this be null??
-	return slot 
+	return slot;
 }
 // FIN DE LA FONCTION CSI3530 // CSI3130 End of function
 
@@ -812,7 +812,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 	uint32		hashvalue; //current hash value for tuple doing the probing
 	int 		bucketNo; //bucket number of ? EDIT: added
 	TupleTableSlot *hashTupleSlot; //tuple slot for hashed tuples EDIT: added
-	TupleTableSlot *econtext_tuple; //tuple slot in the econtext for the hash tuple EDIT: added, still not 100% sure if this is needed
+	TupleTableSlot *econtext_tuple;
 	HashJoinTuple *hjCurTuple; //pointer to hash join cur tuple to update it
 
 
@@ -824,7 +824,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 		bucketNo = hjstate->hj_OuterCurBucketNo; //bucket number of for current outer tuple
 		hashTupleSlot = hjstate->hj_InnerTupleSlot;
 		econtext_tuple = econtext->ecxt_innertuple;
-		hjCurTuple = *hjstate->hj_InnerCurTuple;
+		hjCurTuple = hjstate->hj_InnerCurTuple;
 		
 	}
 	else {
@@ -834,7 +834,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 		bucketNo = hjstate->hj_InnerCurBucketNo; 
 		hashTupleSlot = hjstate->hj_OuterTupleSlot;
 		econtext_tuple = econtext->ecxt_outertuple;
-		hjCurTuple = *hjstate->hj_OuterCurTuple;
+		hjCurTuple = hjstate->hj_OuterCurTuple;
 	}
 
 
@@ -863,7 +863,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 
 			/* insert hashtable's tuple into exec slot so ExecQual sees it */
 			//EDIT: subbed in hasTupleSlot variable
-			inntuple = ExecStoreTuple(heapTuple,
+			etuple = ExecStoreTuple(heapTuple,
 									  hashTupleSlot, 
 									  InvalidBuffer,
 									  false);	/* do not pfree */
@@ -874,7 +874,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 
 			if (ExecQual(hjclauses, econtext, false)) // if qualification returns true, tuples have been matched
 			{
-				*hjCurTuple = hashTuple; //EDIT: update CurTuple of rel2 in hjsate, not sure if i did the pointer right?
+				hjCurTuple = &hashTuple; //EDIT: update CurTuple of rel2 in hjsate, not sure if i did the pointer right?
 				return hashTuple; //EDIT: return Hash
 			}
 		}

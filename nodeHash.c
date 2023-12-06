@@ -812,7 +812,7 @@ ExecScanHashBucket(HashJoinState *hjstate,
 	uint32		hashvalue; //current hash value for tuple doing the probing
 	int 		bucketNo; //bucket number of ? EDIT: added
 	TupleTableSlot *hashTupleSlot; //tuple slot for hashed tuples EDIT: added
-	TupleTableSlot *econtext_tuple;
+	//TupleTableSlot *econtext_tuple;
 	HashJoinTuple *hjCurTuple; //pointer to hash join cur tuple to update it
 
 
@@ -823,8 +823,8 @@ ExecScanHashBucket(HashJoinState *hjstate,
 		hashvalue = hjstate->hj_OuterCurHashValue; //hash value for current outer tuple
 		bucketNo = hjstate->hj_OuterCurBucketNo; //bucket number of for current outer tuple
 		hashTupleSlot = hjstate->hj_InnerTupleSlot;
-		econtext_tuple = econtext->ecxt_innertuple;
-		hjCurTuple = hjstate->hj_InnerCurTuple;
+		//econtext_tuple = econtext->ecxt_innertuple;
+		hjCurTuple = &hjstate->hj_InnerCurTuple;
 		
 	}
 	else {
@@ -833,8 +833,8 @@ ExecScanHashBucket(HashJoinState *hjstate,
 		hashvalue = hjstate->hj_InnerCurHashValue; 
 		bucketNo = hjstate->hj_InnerCurBucketNo; 
 		hashTupleSlot = hjstate->hj_OuterTupleSlot;
-		econtext_tuple = econtext->ecxt_outertuple;
-		hjCurTuple = hjstate->hj_OuterCurTuple;
+		//econtext_tuple = econtext->ecxt_outertuple;
+		hjCurTuple = &hjstate->hj_OuterCurTuple;
 	}
 
 
@@ -867,13 +867,18 @@ ExecScanHashBucket(HashJoinState *hjstate,
 									  hashTupleSlot, 
 									  InvalidBuffer,
 									  false);	/* do not pfree */
-			econtext_tuple = etuple; //EDIT : subbed in variable instead of direct reference to hjstate parameter
-
+			if (hjstate->hj_probingInner) {
+			econtext->ecxt_innertuple = etuple; //EDIT : subbed in variable instead of direct reference to hjstate parameter
+			}
+			else{
+				econtext->ecxt_outertuple = etuple;
+			}
 			/* reset temp memory each time to avoid leaks from qual expr */
 			ResetExprContext(econtext);
 
 			if (ExecQual(hjclauses, econtext, false)) // if qualification returns true, tuples have been matched
 			{
+				*hjCurTuple = hashTuple;
 				hjCurTuple = &hashTuple; //EDIT: update CurTuple of rel2 in hjsate, not sure if i did the pointer right?
 				return hashTuple; //EDIT: return Hash
 			}

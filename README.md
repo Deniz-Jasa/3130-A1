@@ -16,7 +16,7 @@ In our group, we faced several challenges when trying to run older versions of P
 Updates in the macOS also made it difficult for these older PostgreSQL versions to function properly, especially with changes in system libraries and security protocols. Additionally, our older 32-bit PostgreSQL versions became obsolete with macOS's move to support only 64-bit applications. 
 We also couldn't leverage the full potential of the newer Macs' advanced hardware, like faster SSDs and more RAM, leading to performance issues. Networking changes in macOS further complicated connectivity for our PostgreSQL setup. To resolve these issues, we had to use an older macos version.
 
-test=# select e1.ename as "manager", e2.ename as "employee"
+` test=# select e1.ename as "manager", e2.ename as "employee"
 test-# from emp e1, emp e2, dept d, manages m
 test-# where e1.eno = m.eno
 test-# and m.dno = d.dno
@@ -26,9 +26,10 @@ server closed the connection unexpectedly
 	This probably means the server terminated abnormally
 	before or while processing the request.
 The connection to the server was lost. Attempting reset: Failed.
-!> 
+!> `
 
 
+When our group encountered the "server closed the connection unexpectedly" error during our SQL query execution, we first restarted the database server to establish a stable connection. We then checked and adjusted our network settings to prevent similar disruptions in the future. To understand the root cause, we also meticulously reviewed the server logs to identify any potential underlying issues.
 
 ### Tech Stack
 

@@ -5,6 +5,11 @@ Group Members:
 - Maddie
 - Deniz 300229393
 
+## Results
+
+<img width="396" alt="results" src="https://github.com/Deniz-Jasa/3130-A1/assets/46465622/6d9c4d0e-8d30-40d8-815e-fbf54b335090">
+
+
 ## Problems Solved
 
 In our group, we faced several challenges when trying to run older versions of PostgreSQL on newer Mac hardware. The main issue was the incompatibility with Apple's shift to ARM architecture in their M1 and M2 chips, as our PostgreSQL versions were designed for Intel's x86 architecture. 

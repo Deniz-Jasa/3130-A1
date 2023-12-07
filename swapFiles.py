@@ -6,10 +6,10 @@ import getpass
 user_name = getpass.getuser()
 
 file_paths = {
-    "createplan.c": f"/Users/{user_name}/postgresql-15.4/src/backend/optimizer/plan",
-    "execnodes.h": f"/Users/{user_name}/postgresql-15.4/src/include/nodes",
-    "nodeHash.c": f"/Users/{user_name}/postgresql-15.4/src/backend/executor",
-    "nodeHashJoin.c": f"/Users/{user_name}/postgresql-15.4/src/backend/executor"
+    "createplan.c": f"/Users/{user_name}/postgresql-8.1.7/src/backend/optimizer/plan",
+    "execnodes.h": f"/Users/{user_name}/postgresql-8.1.7/src/include/nodes",
+    "nodeHash.c": f"/Users/{user_name}/postgresql-8.1.7/src/backend/executor",
+    "nodeHashJoin.c": f"/Users/{user_name}/postgresql-8.1.7/src/backend/executor"
 }
 
 backup_dir = os.path.join(os.getcwd(), 'backup')

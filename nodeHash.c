@@ -26,7 +26,7 @@
 #include "executor/nodeHash.h"
 #include "executor/nodeHashjoin.h"
 #include "miscadmin.h"
-#include "/parse_expr.h"
+#include "parser/parse_expr.h"
 #include "utils/memutils.h"
 #include "utils/lsyscache.h"
 
@@ -89,7 +89,10 @@ ExecHash(HashState *node)
 	hashvalue = ExecHashGetHashValue(hashtable, econtext, hashkeys);
 	ExecHashTableInsert(hashtable, ExecFetchSlotTuple(slot), hashvalue);
 
-	//EDIT: removed InstrStopNodeMulti (see MultiExecHash)
+
+	/* must provide our own instrumentation support */
+	if (node->ps.instrument)
+		InstrStopNodeMulti(node->ps.instrument, hashtable->totalTuples);
 
 	/*
 	 * return tuple that was hashed

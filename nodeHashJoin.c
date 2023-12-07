@@ -186,6 +186,8 @@ ExecHashJoin(HashJoinState *node)
 		innerHashNode->hashtable = innerHashtable; //EDIT: set inner and outer hash nodetable in hash sate
 		outerHashNode->hashtable = outerHashtable;
 
+		//node->hj_OuterTupleSlot = ExecHash(outerHashNode); //not sure if this is right? - I dont think we need this
+		//node->hj_InnerTupleSlot = ExecHash(innerHashNode); //not sure if this is right??? -delete? 
 		//(void) MultiExecProcNode((PlanState *) hashNode); //EDIT: remove for pipelines execution
 		
 
@@ -223,7 +225,7 @@ ExecHashJoin(HashJoinState *node)
 		 *
 		 * If we don't have an outer tuple, get the next one
 		 */
-		if (node->hj_NeedNewOuter) 
+		if (node->hj_NeedNewOuter || node->hj_OuterExhausted) 
 		{
 			outerTupleSlot = ExecHashJoinOuterGetTuple((PlanState *) outerHashNode, node, &hashvalue);
 			
@@ -266,9 +268,9 @@ ExecHashJoin(HashJoinState *node)
 			}
 		}
 		
-		if (node->hj_NeedNewInner)
+		if (node->hj_NeedNewInner || node->hj_InnerExhausted)
 		{
-			innerTupleSlot = ExecHashJoinInnerGetTuple(innerHashNode, node, &hashvalue);
+			innerTupleSlot = ExecHashJoinInnerGetTuple((PlanState *) innerHashNode, node, &hashvalue);
 			
 			if (TupIsNull(innerTupleSlot))
 			{
@@ -375,7 +377,7 @@ ExecHashJoin(HashJoinState *node)
 			ExprContext* econtext = node->js.ps.ps_ExprContext;
 			econtext->ecxt_innertuple = node->js.ps.ps_OuterTupleSlot; //Getting outer tuple info from ps // Q: Should this not be called econtext->ecxt_outertuple for better readability
 			node->hj_probingInner = true;
-			curtuple = ExecScanHashBucket(node, econtext); 
+			curtuple = ExecScanHashBucket(node, econtext); //Should this be Scan Inner relation? 
 			if (curtuple == NULL)
 				break;			/* out of matches */
 
@@ -568,7 +570,7 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 	 */
 	{
 		HashState  *innerHashstate = (HashState *) innerPlanState(hjstate);
-		TupleTableSlot *outerSlot = innerHashstate->ps.ps_ResultTupleSlot;
+		TupleTableSlot *innerSlot = innerHashstate->ps.ps_ResultTupleSlot;
 
 		hjstate->hj_InnerHashTupleSlot = innerSlot;
 

@@ -7,7 +7,7 @@ Group Members:
 
 ## Results
 
-<img width="395" alt="res" src="https://github.com/Deniz-Jasa/3130-A1/assets/46465622/0f2bff99-0806-48e2-8a66-f5e40076ceb8">
+<img width="392" alt="res" src="https://github.com/Deniz-Jasa/3130-A1/assets/46465622/44f12ce6-d9cd-43c2-aeb3-f24413ced338">
 
 
 ## Problems Encountered

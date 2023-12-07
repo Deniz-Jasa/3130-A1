@@ -223,7 +223,7 @@ ExecHashJoin(HashJoinState *node)
 		 *
 		 * If we don't have an outer tuple, get the next one
 		 */
-		if (node->hj_NeedNewOuter || node->hj_OuterExhausted) 
+		if (node->hj_NeedNewOuter) 
 		{
 			outerTupleSlot = ExecHashJoinOuterGetTuple((PlanState *) outerHashNode, node, &hashvalue);
 			
@@ -266,7 +266,7 @@ ExecHashJoin(HashJoinState *node)
 			}
 		}
 		
-		if (node->hj_NeedNewInner || node->hj_InnerExhausted)
+		if (node->hj_NeedNewInner)
 		{
 			innerTupleSlot = ExecHashJoinInnerGetTuple(innerHashNode, node, &hashvalue);
 			

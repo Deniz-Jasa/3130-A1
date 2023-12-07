@@ -375,7 +375,7 @@ ExecHashJoin(HashJoinState *node)
 			ExprContext* econtext = node->js.ps.ps_ExprContext;
 			econtext->ecxt_innertuple = node->js.ps.ps_OuterTupleSlot; //Getting outer tuple info from ps // Q: Should this not be called econtext->ecxt_outertuple for better readability
 			node->hj_probingInner = true;
-			curtuple = ExecScanHashBucket(node, econtext); //Should this be Scan Inner relation? 
+			curtuple = ExecScanHashBucket(node, econtext); 
 			if (curtuple == NULL)
 				break;			/* out of matches */
 

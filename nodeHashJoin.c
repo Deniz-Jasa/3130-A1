@@ -572,13 +572,13 @@ ExecInitHashJoin(HashJoin *node, EState *estate)
 		HashState  *innerHashstate = (HashState *) innerPlanState(hjstate);
 		TupleTableSlot *outerSlot = innerHashstate->ps.ps_ResultTupleSlot;
 
-		hjstate->hj_OuterHashTupleSlot = outerSlot;
+		hjstate->hj_InnerHashTupleSlot = innerSlot;
 
 		//EDIT: repeat for inner hash tuple slot
 		HashState  *outerHashstate = (HashState *) outerPlanState(hjstate);
-		TupleTableSlot *innerSlot = outerHashstate->ps.ps_ResultTupleSlot;
+		TupleTableSlot *outerSlot = outerHashstate->ps.ps_ResultTupleSlot;
 
-		hjstate->hj_InnerHashTupleSlot = innerSlot;
+		hjstate->hj_OuterHashTupleSlot = outerSlot;
 	}
 
 	/*
@@ -1159,7 +1159,7 @@ ExecReScanHashJoin(HashJoinState *node, ExprContext *exprCtxt)
 			 * alone because ExecHashJoin will need it the first time
 			 * through.)
 			 */
-			node->hj_OuterNotEmpty = false;
+			node->hj_InnerNotEmpty = false;
 		}
 		else
 		{

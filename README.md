@@ -10,7 +10,7 @@ Group Members:
 <img width="396" alt="results" src="https://github.com/Deniz-Jasa/3130-A1/assets/46465622/6d9c4d0e-8d30-40d8-815e-fbf54b335090">
 
 
-## Problems Solved
+## Problems Encountered
 
 In our group, we faced several challenges when trying to run older versions of PostgreSQL on newer Mac hardware. The main issue was the incompatibility with Apple's shift to ARM architecture in their M1 and M2 chips, as our PostgreSQL versions were designed for Intel's x86 architecture. 
 Updates in the macOS also made it difficult for these older PostgreSQL versions to function properly, especially with changes in system libraries and security protocols. Additionally, our older 32-bit PostgreSQL versions became obsolete with macOS's move to support only 64-bit applications. 

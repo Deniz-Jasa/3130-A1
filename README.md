@@ -58,6 +58,4 @@ Create a test database: /usr/local/pgsql/bin/createdb testdb
 * C
 * PostgreSQL 8.1.7
 
-## Results
-
 

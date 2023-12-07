@@ -1,8 +1,8 @@
 ## CSI3130-Project Symmetric Hash Join
 
 Group Members:
-- Giselle
-- Maddie
+- Giselle 300056566
+- Maddie 300227635
 - Deniz 300229393
 
 ## Results

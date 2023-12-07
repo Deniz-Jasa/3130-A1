@@ -13,6 +13,7 @@
  *-------------------------------------------------------------------------
  */
 
+
 #include "postgres.h"
 
 #include "executor/executor.h"
@@ -50,6 +51,7 @@ ExecHashJoin(HashJoinState *node)
 {
 	EState	   *estate;
 	PlanState  *outerNode; //EDIT: no longer need?
+	PlanState  *innerNode;
 	// CSI3530 il faut un innerNode aussi //CSI3130 You need an inner node too
 	HashState  *innerHashNode; //EDIT: Inner hash node state
 	HashState  *outerHashNode; //EDIT: Outer hash node state
@@ -77,6 +79,8 @@ ExecHashJoin(HashJoinState *node)
 	otherqual = node->js.ps.qual;
 	innerHashNode = (HashState *) innerPlanState(node); 
 	outerHashNode = (HashState *) outerPlanState(node); //EDIT: Need an outer plan node as well
+
+
 	//outerNode = outerPlanState(node); //EDIT: no longer needed (Have a hash join outer node instead) 
 	// CSI3530 and CSI3130 ...
 
@@ -101,7 +105,7 @@ ExecHashJoin(HashJoinState *node)
 		if (isDone == ExprMultipleResult)
 			return result;
 		/* Done with that source tuple... */
-		node->js.ps.ps_TupFromTlist = false;
+		node->js.ps.ps_TupFromTlist = false; //?? Should we delete
 	}
 
 	/*
@@ -183,7 +187,7 @@ ExecHashJoin(HashJoinState *node)
 		outerHashNode->hashtable = outerHashtable;
 
 		node->hj_OuterTupleSlot = ExecHash(outerHashNode); //not sure if this is right? - I dont think we need this
-		node->hj_InnerTupleSlot = ExecHash(innerHashNode); //not sure if this is right?
+		node->hj_InnerTupleSlot = ExecHash(innerHashNode); //not sure if this is right??? -delete? 
 		//(void) MultiExecProcNode((PlanState *) hashNode); //EDIT: remove for pipelines execution
 		
 
@@ -221,7 +225,7 @@ ExecHashJoin(HashJoinState *node)
 		 *
 		 * If we don't have an outer tuple, get the next one
 		 */
-		if (node->hj_NeedNewOuter)
+		if (node->hj_NeedNewOuter || node->hj_OuterExhausted) 
 		{
 			outerTupleSlot = ExecHashJoinOuterGetTuple((PlanState *) outerHashNode, node, &hashvalue);
 			
@@ -264,7 +268,7 @@ ExecHashJoin(HashJoinState *node)
 			}
 		}
 		
-		if (node->hj_NeedNewInner)
+		if (node->hj_NeedNewInner || node->hj_InnerExhausted)
 		{
 			innerTupleSlot = ExecHashJoinInnerGetTuple(innerHashNode, node, &hashvalue);
 			
@@ -328,7 +332,7 @@ ExecHashJoin(HashJoinState *node)
 				/*
 			 	* we've got a match, but still need to test non-hashed quals
 			 	*/
-				outtuple = ExecStoreTuple(curtuple, node->hj_InnerHashTupleSlot, InvalidBuffer, false); //Store outer tuple
+				outtuple = ExecStoreTuple(curtuple, node->hj_OuterHashTupleSlot, InvalidBuffer, false); //Store outer tuple
 				econtext->ecxt_outertuple = outtuple;
 
 				/* reset temp memory each time to avoid leaks from qual expr */
@@ -354,7 +358,7 @@ ExecHashJoin(HashJoinState *node)
 
 						if (isDone != ExprEndResult)
 						{
-							node->hj_matchesProbingOuter++; //Found a match
+							node->hj_matchesProbingOuter++; //Found a match ?? Delete?
 							node->js.ps.ps_TupFromTlist =
 								(isDone == ExprMultipleResult);
 							return result;
@@ -381,7 +385,7 @@ ExecHashJoin(HashJoinState *node)
 			 * we've got a match, but still need to test non-hashed quals
 			 */
 			inntuple = ExecStoreTuple(curtuple,
-									  node->hj_OuterHashTupleSlot,
+									  node->hj_InnerHashTupleSlot,
 									  InvalidBuffer,
 									  false);	/* don't pfree this tuple */
 			econtext->ecxt_innertuple = inntuple;
@@ -409,7 +413,7 @@ ExecHashJoin(HashJoinState *node)
 
 					if (isDone != ExprEndResult)
 					{
-						node->hj_matchesProbingInner++; // Found a match 
+						node->hj_matchesProbingInner++; //?? Can we remove Found a match 
 						node->js.ps.ps_TupFromTlist =
 							(isDone == ExprMultipleResult);
 						return result;
@@ -434,6 +438,8 @@ ExecHashJoin(HashJoinState *node)
 		 */
 		node->hj_NeedNewOuter = true;
 		node->js.ps.ps_OuterTupleSlot = NULL;
+
+		//node->hj_OuterNotEmpty = false; ?? should this be implemented?
 
 		if (!node->hj_MatchedOuter &&
 			node->js.jointype == JOIN_LEFT)

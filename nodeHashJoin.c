@@ -186,8 +186,6 @@ ExecHashJoin(HashJoinState *node)
 		innerHashNode->hashtable = innerHashtable; //EDIT: set inner and outer hash nodetable in hash sate
 		outerHashNode->hashtable = outerHashtable;
 
-		node->hj_OuterTupleSlot = ExecHash(outerHashNode); //not sure if this is right? - I dont think we need this
-		node->hj_InnerTupleSlot = ExecHash(innerHashNode); //not sure if this is right??? -delete? 
 		//(void) MultiExecProcNode((PlanState *) hashNode); //EDIT: remove for pipelines execution
 		
 

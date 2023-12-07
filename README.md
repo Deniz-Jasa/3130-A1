@@ -29,7 +29,7 @@ The connection to the server was lost. Attempting reset: Failed.
 !> `
 
 
-When our group encountered the "server closed the connection unexpectedly" error during our SQL query execution, we first restarted the database server to establish a stable connection. We then checked and adjusted our network settings to prevent similar disruptions in the future. To understand the root cause, we also meticulously reviewed the server logs to identify any potential underlying issues.
+When our group encountered the "server closed the connection unexpectedly" error during our SQL query execution, we first restarted the database server to re-establish a stable connection and reviewed the server logs. There, we found indications of intermittent network disruptions and a few instances of server overload, which likely caused the abrupt termination.
 
 ### Tech Stack
 

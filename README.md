@@ -17,10 +17,6 @@ Updates in the macOS also made it difficult for these older PostgreSQL versions 
 We also couldn't leverage the full potential of the newer Macs' advanced hardware, like faster SSDs and more RAM, leading to performance issues. Networking changes in macOS further complicated connectivity for our PostgreSQL setup. 
 To resolve these issues, we had to upgrade to the latest PostgreSQL version and adjust our configurations to suit the new macOS environment.
 
-
-When executing the provided files, there was an error where the server crahsed as a result of the lines where a check for repeated tuples is performed in nodeHashJoin.c:
-Specifically, the evaluation of `&curtuple->t_data->t_ctid` was not possible. To resolve this, the way we acquire the `HeapTuple curtuple` was altered. Now, it's sourced from an adjusted `ExecScanHashBucket` function in `nodeHash.c`, instead of using separate `ExecScanHashBucket_probeouter()` and `ExecScanHashBucket_probeinner()` functions. The outcome of this function must be cast to the `HeapTuple` type. This adjustment enables queries using symmetric hash join to execute without causing a server crash.
-
 ### Tech Stack
 
 ![C](https://img.shields.io/badge/c-%23ED8B00.svg?style=for-the-badge&logo=c&logoColor=white)
